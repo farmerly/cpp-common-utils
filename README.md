@@ -3,3 +3,30 @@
 ## 项目介绍
 c++ 工具类
 
+#### checksum
+
+数据校验工具
+
+#### crypto
+
+加密工具
+
+#### logutils
+
+日志工具
+
+#### sockutils
+
+socket 通讯封装
+
+#### threadpool
+
+线程池
+
+#### toolutils
+
+工具集合
+
+#### xmlutils
+
+xml 工具
