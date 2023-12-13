@@ -1,11 +1,15 @@
 #include "LogManager.h"
 #include "FileUtils.h"
+#include "LogQueue.h"
 #include <chrono>
 #include <cstring>
 #include <iomanip>
 #include <mutex>
 #include <sstream>
 #include <thread>
+
+// #define NO_PRODUCER_LOCK
+// #define NO_CONSUMER_LOCK
 
 using namespace std;
 using namespace logutils;
@@ -14,11 +18,8 @@ LogManager *g_logManager = new LogManager();
 
 LogManager::LogManager()
 {
-    m_pdrTemp = 0;
-    m_producer = 0;
-    m_consumer = 0;
     m_running = true;
-    m_logQueue = new LogMessage[LOG_QUEUE_SIZE];
+    m_logQueue = new LogQueue();
     m_thHandle = std::thread(&LogManager::loggerWorkerThread, this);
 }
 
@@ -66,40 +67,15 @@ void LogManager::logRecord(int level, const char *format, ...)
 {
     LogMessage *log = nullptr;
     do {
-        log = getProducer();
+        log = m_logQueue->getProducer();
     } while (log == nullptr);
 
-    va_list args;
+    std::va_list args;
     va_start(args, format);
-#if defined(__GNUC__)
-    vsnprintf(log->message, LOG_LINE_SIZE, format, args);
-#elif defined(_MSC_VER)
-    vsprintf_s(log->message, format, args);
-#endif
+    log->setMessage(level, format, args);
     va_end(args);
 
-    log->level = level;
-    putProducer();
-}
-
-LogMessage *LogManager::getConsumer()
-{
-    return (m_producer != m_consumer) ? &m_logQueue[m_consumer] : nullptr;
-}
-
-void LogManager::putConsumer()
-{
-    m_consumer = (m_consumer + 1) % LOG_QUEUE_SIZE;
-}
-
-LogMessage *LogManager::getProducer()
-{
-    return ((m_producer + 1) % LOG_QUEUE_SIZE) != m_consumer ? &m_logQueue[(m_pdrTemp = (m_pdrTemp + 1) % LOG_QUEUE_SIZE)] : nullptr;
-}
-
-void LogManager::putProducer()
-{
-    m_producer = (m_producer + 1) % LOG_QUEUE_SIZE;
+    m_logQueue->putProducer(log);
 }
 
 void LogManager::openLogFile(int level)
@@ -130,23 +106,27 @@ void LogManager::openLogFile(int level)
 
 void LogManager::loggerWorkerThread()
 {
+    int index = 0;
     while (m_running) {
-        LogMessage *log = getConsumer();
+        LogMessage *log = m_logQueue->getConsumer();
         if (log == nullptr) {
             this_thread::sleep_for(chrono::milliseconds(1));
             continue;
         }
 
-        if (log->level > LOG_LEVEL_DEBUG) {
-            if (!m_logStream[log->level].is_open()) {
-                openLogFile(log->level);
+        if (log->level() > LOG_LEVEL_DEBUG) {
+            if (!m_logStream[log->level()].is_open()) {
+                openLogFile(log->level());
             }
-            m_logStream[log->level].write(log->message, strlen(log->message));
-            m_logStream[log->level].flush();
+            // printf("message: %s", log->message);
+            m_logStream[log->level()].write(log->getMessage(), log->length());
+            m_logStream[log->level()].flush();
+        } else {
+            std::cout << log->level() << ", not write: " << log->getMessage() << std::endl;
         }
-        if (m_logLevel >= log->level) {
-            printf("%s", log->message);
+        if (m_logLevel >= log->level()) {
+            printf("%s", log->getMessage());
         }
-        putConsumer();
+        m_logQueue->putConsumer(log);
     }
 }

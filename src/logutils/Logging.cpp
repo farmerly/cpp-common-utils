@@ -1,4 +1,4 @@
-#include "Logger.h"
+#include "Logging.h"
 
 bool init_log_manager(std::string filename, int level, int keepDays)
 {

@@ -15,6 +15,12 @@ c++ 工具类
 
 日志工具
 
+head                    tail
+ |                        |
+node -> node -> node -> node -> null
+
+
+
 #### sockutils
 
 socket 通讯封装
