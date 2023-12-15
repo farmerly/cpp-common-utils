@@ -1,4 +1,5 @@
 #include "TimeUtils.h"
+#include "StringUtils.h"
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -27,4 +28,23 @@ std::string get_current_format_datetime()
     auto ms = (millis - second).count();
     ss << "." << std::setfill('0') << std::setw(6) << ms;
     return ss.str();
+}
+
+uint64_t datetime_to_timestamp(std::string datetime)
+{
+    uint16_t year, month, day, hour, min, sec, milliseconds = 0;
+
+    auto pos = datetime.find(".");
+    if (pos != std::string::npos) {
+        std::string ms = datetime.substr(pos + 1);
+        milliseconds = atoi(ms.c_str());
+        datetime = datetime.substr(0, pos);
+    }
+    if (datetime.find("T") != std::string::npos) {
+        string_replace(datetime, "T", " ");
+    }
+    struct tm timeinfo;
+    strptime(datetime.c_str(), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    time_t timer = mktime(&timeinfo);
+    return (uint64_t)timer * 1000 + (uint64_t)milliseconds;
 }

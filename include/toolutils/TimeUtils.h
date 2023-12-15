@@ -18,4 +18,9 @@ uint64_t get_current_timestamp_millis();
  */
 std::string get_current_format_datetime();
 
+/**
+ * 字符串时间转为时间戳
+ */
+uint64_t datetime_to_timestamp(std::string datetime);
+
 #endif
