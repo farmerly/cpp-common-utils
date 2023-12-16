@@ -1,5 +1,8 @@
 #pragma once
 
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 #if defined(__GNUC__)
@@ -34,3 +37,54 @@ void msleep(uint16_t msec);
  * @return hex 字符串
  */
 std::string get_hex_string(const unsigned char *buf, unsigned int len);
+
+/**
+ * 浮点数按照精度转换为字符串类型
+ * @param input 输入浮点型数字
+ * @param num 输出数字精度
+ * @return std::string 转换完成的字符串
+ */
+template <typename T>
+std::string decimal2string(T number, int limits = 0)
+{
+    // 精度
+    int digits = limits > 0 ? limits : std::numeric_limits<T>::digits10;
+
+    // 数字转字符串
+    std::ostringstream oss;
+    oss.precision(digits);
+    oss << std::setbase(10) << number;
+    std::string strNum = oss.str();
+
+    if (strNum.find('.') != std::string::npos) {
+        std::string::reverse_iterator rit = strNum.rbegin();
+        while (rit != strNum.rend()) {
+            if (*rit != '0') {
+                if (*rit == '.')
+                    rit++;
+                break;
+            }
+            rit++;
+        }
+
+        if (rit != strNum.rbegin()) {
+            std::string::iterator it = rit.base();
+            strNum.erase(it, strNum.end());
+        }
+    }
+    return strNum;
+}
+
+/**
+ * 计算 lambda 表达式耗时
+ * @param func lambda 表达式
+ * @return double 类型, 毫秒耗时
+ */
+template <typename F>
+double calculate_cost_time(F const &func)
+{
+    auto begin = std::chrono::system_clock::now();
+    func();
+    auto end = std::chrono::system_clock::now();
+    return std::chrono::duration<double, std::milli>(end - begin).count();
+}

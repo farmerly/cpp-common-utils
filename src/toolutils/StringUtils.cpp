@@ -10,12 +10,17 @@ int sprintf_safe(char *dest, int size, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
 #if defined(__GNUC__)
-    int n = vsprintf(dest, fmt, args);
+    int n = vsnprintf(dest, size, fmt, args);
 #elif defined(_MSC_VER)
     int n = vsprintf_s(dest, size, fmt, args);
 #endif
     va_end(args);
     return n;
+}
+
+std::vector<std::string> split_strings(const std::string &msg, std::string separator)
+{
+    std::vector<std::string> vecStrings;
 }
 
 std::string *get_split_strings(std::string msg, const char *separator, int &count)
@@ -69,7 +74,17 @@ void string_trim(std::string &msg, const char ch)
 
 void string_replace(std::string &msg, std::string src, std::string dst)
 {
-    while (msg.find(src) != -1) {
+    while (msg.find(src) != std::string::npos) {
         msg.replace(msg.find(src), src.length(), dst);
     }
+}
+
+bool string_starts_with(const std::string &str, std::string start)
+{
+    auto startLen = start.size();
+    if (str.size() >= startLen) {
+        std::string temp = str.substr(0, startLen);
+        return temp.compare(start) == 0;
+    }
+    return false;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 /**
  * safe sprintf
@@ -13,12 +14,7 @@ int sprintf_safe(char *dest, int size, const char *fmt, ...);
 /**
  * 字符分割
  */
-std::string *get_split_strings(std::string msg, const char *separator, int &count);
-
-/**
- * 释放 get_split_strings 的返回值
- */
-void split_strings_free(std::string *&strings);
+std::vector<std::string> split_strings(const std::string &msg, std::string separator);
 
 /**
  * 去除左右两端字符
@@ -32,3 +28,8 @@ void string_trim(std::string &msg, const char ch);
  * @param string dst 替换后的字符
  */
 void string_replace(std::string &msg, std::string src, std::string dst);
+
+/**
+ * string 起始字符串判断
+ */
+bool string_starts_with(const std::string &str, std::string start);
