@@ -21,39 +21,17 @@ int sprintf_safe(char *dest, int size, const char *fmt, ...)
 std::vector<std::string> split_strings(const std::string &msg, std::string separator)
 {
     std::vector<std::string> vecStrings;
-}
 
-std::string *get_split_strings(std::string msg, const char *separator, int &count)
-{
-    std::list<std::string> string_list;
-    int                    position = 0;
-    count = 0;
-    while (true) {
-        int         n = msg.find(separator, position);
-        std::string tmp_string = msg.substr(position, n - position);
-        if (tmp_string.length() != 0) {
-            string_list.push_back(tmp_string);
-            count += 1;
-        }
-        if (n == -1)
-            break;
-        position = n + strlen(separator);
+    // start 起始位置, pos 分隔符位置
+    int start = 0, pos = 0;
+    while ((pos = msg.find(separator, start)) != std::string::npos) {
+        if (start != pos)
+            vecStrings.push_back(msg.substr(start, pos - start));
+        start = pos + separator.length();
     }
-    std::string                     *strings = new std::string[count];
-    std::list<std::string>::iterator iter;
-    int                              i = 0;
-    for (iter = string_list.begin(); iter != string_list.end(); iter++) {
-        strings[i++] = (*iter);
-    }
-    return strings;
-}
-
-void split_strings_free(std::string *&strings)
-{
-    if (strings == nullptr) {
-        delete[] strings;
-        strings = nullptr;
-    }
+    if (start != msg.length())
+        vecStrings.push_back(msg.substr(start));
+    return vecStrings;
 }
 
 void string_trim(std::string &msg, const char ch)
