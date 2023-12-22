@@ -34,20 +34,22 @@ std::vector<std::string> split_strings(const std::string &msg, std::string separ
     return vecStrings;
 }
 
-void string_trim(std::string &msg, const char ch)
+std::string string_trim(const std::string &msg, const char ch)
 {
-    while (msg.length() > 0) {
-        if (msg[0] != ch) {
+    std::string message = msg;
+    while (message.length() > 0) {
+        if (message[0] != ch) {
             break;
         }
-        msg.erase(0, 1);
+        message.erase(0, 1);
     }
 
-    while (msg.length() > 0) {
-        if (msg[msg.length() - 1] != ch)
+    while (message.length() > 0) {
+        if (message[message.length() - 1] != ch)
             break;
-        msg.erase(msg.length() - 1, msg.length());
+        message.erase(message.length() - 1, message.length());
     }
+    return message;
 }
 
 void string_replace(std::string &msg, std::string src, std::string dst)

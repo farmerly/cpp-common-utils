@@ -18,8 +18,11 @@ std::vector<std::string> split_strings(const std::string &msg, std::string separ
 
 /**
  * 去除左右两端字符
+ * @param msg 原始字符串
+ * @param ch 要修剪的字符
+ * @return 修剪后的字符串
  */
-void string_trim(std::string &msg, const char ch);
+std::string string_trim(const std::string &msg, const char ch);
 
 /**
  * 字符串替换

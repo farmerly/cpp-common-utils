@@ -4,8 +4,9 @@
 #include <string>
 
 /**
- * 获取文件名
+ * 从文件路径截取文件名
  * @param 完整文件路径
+ * @return 返回文件名
  */
 const char *const_basename(const char *filepath);
 
@@ -25,6 +26,6 @@ void create_directory_recurse(const std::string &directory);
  * 移除目标文件夹
  * @param directory 文件夹路径
  */
-void remove_directory_recurse(const char *directory);
+bool remove_directory_recurse(const char *directory);
 
 #endif

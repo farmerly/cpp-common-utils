@@ -6,9 +6,13 @@
 
 using namespace sockutils;
 
+#ifndef INVALID_SOCKET
+    #define INVALID_SOCKET (-1)
+#endif
+
 UdpServer::UdpServer()
 {
-    m_sockfd = -1;
+    m_sockfd = INVALID_SOCKET;
 }
 
 UdpServer::~UdpServer()
@@ -19,8 +23,7 @@ UdpServer::~UdpServer()
 
 bool UdpServer::bindAddress(uint16_t port)
 {
-    m_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (m_sockfd < 0) {
+    if ((m_sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0) {
         return false;
     }
 
@@ -37,8 +40,10 @@ bool UdpServer::bindAddress(uint16_t port)
         if (::bind(m_sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
             goto err;
         }
+        LOG(INFO) << "UdpServer 服务启动成功, 端口号: " << port;
+    } else {
+        LOG(INFO) << "UdpServer 套接字绑定成功, sockfd: " << m_sockfd;
     }
-    LOG(INFO) << "UdpServer 服务启动成功, 端口号: " << port;
     return true;
 
 err:
@@ -48,9 +53,9 @@ err:
 
 void UdpServer::closesocket()
 {
-    if (m_sockfd != -1) {
+    if (m_sockfd != INVALID_SOCKET) {
         ::close(m_sockfd);
-        m_sockfd = -1;
+        m_sockfd = INVALID_SOCKET;
     }
 }
 
@@ -66,21 +71,19 @@ void UdpServer::loopThread(uint16_t port)
 
         int len = recvfrom(m_sockfd, buffer, 65535, 0, (sockaddr *)&sa, &sa_size);
         if (len > 0) {
-            m_callback(buffer, len, &sa);
+            if (m_callback) {
+                m_callback(buffer, len, &sa);
+            }
         } else if (len < 0) {
-            if (errno == EWOULDBLOCK || errno == EAGAIN)
-                printf("recvfrom timeout\n");
-            else
+            if (errno != EWOULDBLOCK && errno != EAGAIN) {
                 printf("recvfrom err:%d\n", len);
+            }
         }
     }
 }
 
 bool UdpServer::start(uint16_t port)
 {
-    if (!m_callback)
-        return false;
-
     m_running = true;
     m_thread = std::thread(&UdpServer::loopThread, this, port);
     return true;
@@ -100,7 +103,7 @@ void UdpServer::setRecvCallback(UdpServerRecvCB callback)
     m_callback = callback;
 }
 
-int UdpServer::sendMessage(char *buf, int len, sockaddr_in *sa)
+int UdpServer::sendMessage(char *buf, int len, const sockaddr_in &sa)
 {
     return sendto(m_sockfd, buf, len, 0, (sockaddr *)&sa, sizeof(sockaddr_in));
 }

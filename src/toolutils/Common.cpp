@@ -47,13 +47,6 @@ void sig_process(int signo, sighandler_t handler)
     sigaction(signo, &sa, NULL);
 }
 
-void sig_handler(int signo)
-{
-    if (signo == SIGPIPE) {
-        return;
-    }
-}
-
 void run_daemon()
 {
     pid_t pid = fork();
@@ -66,19 +59,10 @@ void run_daemon()
     setsid();
     sig_process(SIGHUP, SIG_IGN);
     sig_process(SIGTERM, SIG_IGN);
-    sig_process(SIGPIPE, sig_handler);
+    sig_process(SIGPIPE, SIG_IGN);
 }
 
 #endif
-
-void msleep(uint16_t msec)
-{
-#if defined(__GNUC__)
-    usleep(msec * 1000);
-#elif defined(_MSC_VER)
-    Sleep(msec);
-#endif
-}
 
 std::string get_hex_string(const unsigned char *buf, unsigned int len)
 {
@@ -89,7 +73,8 @@ std::string get_hex_string(const unsigned char *buf, unsigned int len)
     for (int i = 0; i < len; i++) {
         message += hex_table[buf[i] >> 4];
         message += hex_table[buf[i] & 0x0F];
-        message += ' ';
+        if (len > i + 1)
+            message += ' ';
     }
     return message;
 }

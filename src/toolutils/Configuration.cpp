@@ -1,66 +1,67 @@
 #include "Configuration.h"
 #include "StringUtils.h"
 #include "TimeUtils.h"
+#include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <string>
 
-std::string get_config_prop_string(const char *value_name, const char *default_value, const char *filename)
+bool set_config_prop_string(const char *filename, const char *key, const char *value)
 {
-    int           position = 0;
-    std::string   value;
+    int   length = strlen(key) + strlen(value) + 10;
+    char *property = new char[length];
+    sprintf_safe(property, length, "%s = %s\n", key, value);
+    std::ofstream ofile(filename, std::ios::app);
+    if (!ofile.is_open()) {
+        return false;
+    }
+    ofile.write(property, strlen(property));
+    ofile.close();
+    return true;
+}
+
+std::string get_config_prop_string(const char *filename, const char *key, const char *default_value)
+{
     std::ifstream ifile(filename);
     if (ifile.is_open()) {
-        while (!ifile.eof()) {
-            std::string s;
-            getline(ifile, s);
+        int         position = 0;
+        std::string linestr;
+        while (std::getline(ifile, linestr)) {
+            if (string_starts_with(linestr, "#"))
+                continue;
 
-            if (s.length() <= 0 || s[0] == '#')
+            if ((position = linestr.find("=")) == linestr.npos)
                 continue;
-            position = s.find("=");
-            if (position == s.npos)
+
+            std::string k = linestr.substr(0, position);
+            if (strncmp(key, k.c_str(), strlen(key)) != 0)
                 continue;
-            std::string key = s.substr(0, position);
-            value = s.substr(position + 1, s.npos);
-            if (strncmp(value_name, key.c_str(), strlen(value_name)) != 0)
-                continue;
+
             ifile.close();
-            string_trim(value, ' ');
-            return value;
+            std::string v = linestr.substr(position + 1, linestr.npos);
+            return string_trim(v, ' ');
         }
         ifile.close();
     }
 
-    char property[512] = {0};
-    printf("%s [warn]: Not Found [%s]\n", get_current_format_datetime().c_str(), value_name);
-    sprintf_safe(property, 512, "%s = %s\n", value_name, default_value);
-
-    std::ofstream ofile(filename, std::ios::app);
-    ofile.write(property, strlen(property));
-    ofile.close();
-    value = default_value;
-    return value;
+    printf("%s [warn]: Not Found [%s]\n", get_current_format_datetime().c_str(), key);
+    if (default_value != nullptr) {
+        set_config_prop_string(filename, key, default_value);
+        return std::string(default_value);
+    }
+    return "";
 }
 
-std::string get_config_prop_string(const char *value_name, const char *default_value)
+int get_config_prop_int(const char *filename, const char *keyname, int default_value)
 {
-#if defined(__GNUC__)
-    return get_config_prop_string(value_name, default_value, "./configure.ini");
-#elif defined(_MSC_VER)
-    return get_config_prop_string(value_name, default_value, ".\\configure.ini");
-#endif
+    std::string value_str = std::to_string(default_value);
+    std::string config_value = get_config_prop_string(filename, keyname, value_str.c_str());
+    return std::atoi(config_value.c_str());
 }
 
-int get_config_prop_int(const char *value_name, const char *default_value, const char *filename)
+double get_config_prop_double(const char *filename, const char *keyname, double default_value)
 {
-    std::string config_value = get_config_prop_string(value_name, default_value, filename);
-    return atoi(config_value.c_str());
-}
-
-int get_config_prop_int(const char *value_name, const char *default_value)
-{
-#if defined(__GNUC__)
-    return get_config_prop_int(value_name, default_value, "./configure.ini");
-#elif defined(_MSC_VER)
-    return get_config_prop_int(value_name, default_value, ".\\configure.ini");
-#endif
+    std::string value_str = std::to_string(default_value);
+    std::string config_value = get_config_prop_string(filename, keyname, value_str.c_str());
+    return std::strtod(config_value.c_str(), nullptr);
 }

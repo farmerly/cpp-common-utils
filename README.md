@@ -35,4 +35,4 @@ socket 通讯封装
 
 #### xmlutils
 
-xml 工具
+xml 工具, 对 tinyxml2 开源库进行了封装

@@ -21,10 +21,10 @@ public:
     void stop();
 
 private:
-    std::thread            *m_threads;
-    int                     m_poolSize;
-    bool                    m_runFlags;
-    std::list<ThreadTask *> m_taskQueue;
+    std::thread            *m_threads;   // 线程队列
+    int                     m_poolSize;  // 线程池大小
+    bool                    m_runFlags;  // 运行标识
+    std::list<ThreadTask *> m_taskQueue; // 任务队列
     std::mutex              m_lock;
     std::condition_variable m_cond;
 };

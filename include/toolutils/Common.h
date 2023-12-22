@@ -10,25 +10,16 @@ typedef void (*sighandler_t)(int);
 
 /**
  * 信号处理
+ * @param signo 系统信号
+ * @param handler 信号处理回调
  */
 void sig_process(int signo, sighandler_t handler);
 
 /**
  * 守护模式运行程序
  */
-void sig_handler(int signo);
-
-/**
- * 守护模式运行程序
- */
 void run_daemon();
 #endif
-
-/**
- * 线程休眠
- * @param msec 毫秒数
- */
-void msleep(uint16_t msec);
 
 /**
  * 十六进制数据转 hex
@@ -40,14 +31,13 @@ std::string get_hex_string(const unsigned char *buf, unsigned int len);
 
 /**
  * 浮点数按照精度转换为字符串类型
- * @param input 输入浮点型数字
- * @param num 输出数字精度
+ * @param number 输入浮点型数字
+ * @param limits 输出数字精度(整数加小数)
  * @return std::string 转换完成的字符串
  */
 template <typename T>
 std::string decimal2string(T number, int limits = 0)
 {
-    // 精度
     int digits = limits > 0 ? limits : std::numeric_limits<T>::digits10;
 
     // 数字转字符串

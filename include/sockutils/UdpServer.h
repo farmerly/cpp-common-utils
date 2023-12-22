@@ -25,7 +25,7 @@ public:
     bool start(uint16_t port);
     void stop();
     void setRecvCallback(UdpServerRecvCB callback);
-    int  sendMessage(char *buf, int len, sockaddr_in *);
+    int  sendMessage(char *buf, int len, const sockaddr_in &sa);
 
 private:
     int             m_sockfd;
