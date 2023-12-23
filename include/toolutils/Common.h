@@ -78,3 +78,15 @@ double calculate_cost_time(F const &func)
     auto end = std::chrono::system_clock::now();
     return std::chrono::duration<double, std::milli>(end - begin).count();
 }
+
+/**
+ * 主机字节序转网络字节序
+ * @param uint64_t 无符长整型数字
+ */
+unsigned long long htonll(unsigned long long val);
+
+/**
+ * 网络字节序转主机字节序
+ * @param uint64_t 无符长整型数字
+ */
+unsigned long long ntohll(unsigned long long val);

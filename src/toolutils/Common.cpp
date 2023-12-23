@@ -10,10 +10,10 @@
 // =====================================================================================
 
 #include "Common.h"
-
 #include <stdlib.h>
 
 #if defined(__GNUC__)
+    #include <arpa/inet.h>
     #include <dirent.h>
     #include <signal.h>
     #include <stdarg.h>
@@ -77,4 +77,22 @@ std::string get_hex_string(const unsigned char *buf, unsigned int len)
             message += ' ';
     }
     return message;
+}
+
+unsigned long long htonll(unsigned long long val)
+{
+    if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+        return (((unsigned long long)htonl((int)((val << 32) >> 32))) << 32) | (unsigned int)htonl((int)(val >> 32));
+    } else if (__BYTE_ORDER == __BIG_ENDIAN) {
+        return val;
+    }
+}
+
+unsigned long long ntohll(unsigned long long val)
+{
+    if (__BYTE_ORDER == __LITTLE_ENDIAN) {
+        return (((unsigned long long)ntohl((int)((val << 32) >> 32))) << 32) | (unsigned int)ntohl((int)(val >> 32));
+    } else if (__BYTE_ORDER == __BIG_ENDIAN) {
+        return val;
+    }
 }
