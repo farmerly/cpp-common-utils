@@ -1,5 +1,4 @@
-#ifndef _TIME_UTILS_H_H_H
-#define _TIME_UTILS_H_H_H
+#pragma once
 
 #include <string>
 
@@ -34,5 +33,3 @@ uint64_t datetime_to_timestamp(std::string datetime);
  * @return 日期时间
  */
 std::string milliseconds_to_datetime(uint64_t ms);
-
-#endif

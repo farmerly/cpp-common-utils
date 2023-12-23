@@ -1,5 +1,4 @@
-#ifndef THREAD_TASK_H_H_H
-#define THREAD_TASK_H_H_H
+#pragma once
 
 #include <functional>
 
@@ -17,5 +16,3 @@ private:
     void                       *m_args;
     std::function<void(void *)> m_release;
 };
-
-#endif

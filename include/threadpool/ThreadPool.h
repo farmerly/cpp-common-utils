@@ -1,5 +1,4 @@
-#ifndef THREAD_POOL_H_H_H
-#define THREAD_POOL_H_H_H
+#pragma once
 
 #include "ThreadTask.h"
 #include <condition_variable>
@@ -28,5 +27,3 @@ private:
     std::mutex              m_lock;
     std::condition_variable m_cond;
 };
-
-#endif

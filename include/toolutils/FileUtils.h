@@ -1,5 +1,4 @@
-#ifndef _FILE_UTILS_H_H_H
-#define _FILE_UTILS_H_H_H
+#pragma once
 
 #include <string>
 
@@ -56,5 +55,3 @@ void create_directory_recurse(const std::string &directory);
  * @return true/false
  */
 bool remove_directory_recurse(const char *directory);
-
-#endif
