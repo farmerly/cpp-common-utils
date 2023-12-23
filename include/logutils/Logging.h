@@ -49,4 +49,4 @@ extern logutils::LogManager *g_logManager;
  * @param keepDays 日志留存时间
  * @return true/false
  */
-bool init_log_manager(std::string filename, int level = 0, int keepDays = 0);
+bool init_log_manager(std::string filename, int keepDays = 30, int level = 1);

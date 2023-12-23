@@ -8,9 +8,6 @@
 #include <sstream>
 #include <thread>
 
-// #define NO_PRODUCER_LOCK
-// #define NO_CONSUMER_LOCK
-
 using namespace std;
 using namespace logutils;
 
@@ -75,7 +72,7 @@ void LogManager::logRecord(int level, const char *format, ...)
     log->setMessage(level, format, args);
     va_end(args);
 
-    m_logQueue->putProducer(log);
+    m_logQueue->putConsumer(log);
 }
 
 void LogManager::openLogFile(int level)
@@ -106,7 +103,6 @@ void LogManager::openLogFile(int level)
 
 void LogManager::loggerWorkerThread()
 {
-    int index = 0;
     while (m_running) {
         LogMessage *log = m_logQueue->getConsumer();
         if (log == nullptr) {
@@ -114,19 +110,15 @@ void LogManager::loggerWorkerThread()
             continue;
         }
 
-        if (log->level() > LOG_LEVEL_DEBUG) {
+        if (log->level() > m_logLevel) {
             if (!m_logStream[log->level()].is_open()) {
                 openLogFile(log->level());
             }
-            // printf("message: %s", log->message);
             m_logStream[log->level()].write(log->getMessage(), log->length());
             m_logStream[log->level()].flush();
         } else {
-            std::cout << log->level() << ", not write: " << log->getMessage() << std::endl;
-        }
-        if (m_logLevel >= log->level()) {
             printf("%s", log->getMessage());
         }
-        m_logQueue->putConsumer(log);
+        m_logQueue->putProducer(log);
     }
 }

@@ -1,32 +1,39 @@
 #include "LogQueue.h"
 #include "LogConstants.h"
+#include "LogMessage.h"
 #include <mutex>
 
 namespace logutils {
 
-LogQueue::LogQueue() : m_pdrLocate(0), m_producer(0), m_consumer(0)
+LogQueue::LogQueue()
 {
     for (int i = 0; i < LOG_QUEUE_SIZE; i++) {
-        m_logQueue[i] = new LogMessage();
+        m_producerQueue.push_back(new LogMessage());
     }
 }
 
 LogQueue::~LogQueue()
 {
-    for (int i = 0; i < LOG_QUEUE_SIZE; i++) {
-        if (m_logQueue[i]) {
-            delete m_logQueue[i];
-        }
+    while (m_producerQueue.size() > 0) {
+        LogMessage *log = m_producerQueue.front();
+        m_producerQueue.pop_front();
+        delete log;
+    }
+
+    while (m_consumerQueue.size() > 0) {
+        LogMessage *log = m_consumerQueue.front();
+        m_consumerQueue.pop_front();
+        delete log;
     }
 }
 
 LogMessage *LogQueue::getConsumer()
 {
-    if (m_producer != m_consumer) {
-        std::lock_guard<std::mutex> guard(m_queueLock);
-        if (m_producer != m_consumer) {
-            LogMessage *log = m_logQueue[m_consumer];
-            m_logQueue[m_consumer] = nullptr;
+    if (m_consumerQueue.size() > 0) {
+        std::lock_guard<std::mutex> guard(m_consumerLock);
+        if (m_consumerQueue.size() > 0) {
+            LogMessage *log = m_consumerQueue.front();
+            m_consumerQueue.pop_front();
             return log;
         }
     }
@@ -35,18 +42,17 @@ LogMessage *LogQueue::getConsumer()
 
 void LogQueue::putConsumer(LogMessage *logMessage)
 {
-    std::lock_guard<std::mutex> guard(m_queueLock);
-    m_logQueue[m_consumer] = logMessage;
-    m_consumer = (m_consumer + 1) % LOG_QUEUE_SIZE;
+    std::lock_guard<std::mutex> guard(m_consumerLock);
+    m_consumerQueue.push_back(logMessage);
 }
 
 LogMessage *LogQueue::getProducer()
 {
-    if (((m_producer + 1) % LOG_QUEUE_SIZE) != m_consumer) {
-        std::lock_guard<std::mutex> guard(m_queueLock);
-        if (((m_producer + 1) % LOG_QUEUE_SIZE) != m_consumer) {
-            LogMessage *log = m_logQueue[m_pdrLocate %= LOG_QUEUE_SIZE];
-            m_logQueue[m_pdrLocate++] = nullptr;
+    if (m_producerQueue.size() > 0) {
+        std::lock_guard<std::mutex> guard(m_producerLock);
+        if (m_producerQueue.size() > 0) {
+            LogMessage *log = m_producerQueue.front();
+            m_producerQueue.pop_front();
             return log;
         }
     }
@@ -55,9 +61,8 @@ LogMessage *LogQueue::getProducer()
 
 void LogQueue::putProducer(LogMessage *logMessage)
 {
-    std::lock_guard<std::mutex> guard(m_queueLock);
-    m_logQueue[m_producer] = logMessage;
-    m_producer = (m_producer + 1) % LOG_QUEUE_SIZE;
+    std::lock_guard<std::mutex> guard(m_producerLock);
+    m_producerQueue.push_back(logMessage);
 }
 
 } // namespace logutils

@@ -32,9 +32,8 @@ std::string get_current_format_datetime()
 
 uint64_t datetime_to_timestamp(std::string datetime)
 {
-    uint16_t year, month, day, hour, min, sec, milliseconds = 0;
-
-    auto pos = datetime.find(".");
+    uint16_t milliseconds = 0;
+    auto     pos = datetime.find(".");
     if (pos != std::string::npos) {
         std::string ms = datetime.substr(pos + 1);
         milliseconds = atoi(ms.c_str());
@@ -43,8 +42,30 @@ uint64_t datetime_to_timestamp(std::string datetime)
     if (datetime.find("T") != std::string::npos) {
         string_replace(datetime, "T", " ");
     }
-    struct tm timeinfo;
-    strptime(datetime.c_str(), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+    struct tm timeinfo = {0, 0, 0, 1, 0, 70};
+    if (datetime.find(" ") != std::string::npos) {
+        strptime(datetime.c_str(), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    } else {
+        if (datetime.find("-") != std::string::npos) {
+            std::vector<std::string> vecString = split_strings(datetime, "-");
+            if (vecString.size() > 0)
+                timeinfo.tm_year = std::atoi(vecString[0].c_str()) - 1900;
+            if (vecString.size() > 1)
+                timeinfo.tm_mon = std::atoi(vecString[1].c_str()) - 1;
+            if (vecString.size() > 2)
+                timeinfo.tm_mday = std::atoi(vecString[2].c_str());
+        } else if (datetime.find(":") != std::string::npos) {
+            std::vector<std::string> vecString = split_strings(datetime, ":");
+            if (vecString.size() > 0)
+                timeinfo.tm_hour = std::atoi(vecString[0].c_str());
+            if (vecString.size() > 1)
+                timeinfo.tm_min = std::atoi(vecString[1].c_str());
+            if (vecString.size() > 2)
+                timeinfo.tm_sec = std::atoi(vecString[2].c_str());
+        }
+    }
+
     time_t timer = mktime(&timeinfo);
     return (uint64_t)timer * 1000 + (uint64_t)milliseconds;
 }

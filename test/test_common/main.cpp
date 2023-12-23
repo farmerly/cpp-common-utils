@@ -14,8 +14,8 @@ void test_strutils();
 
 int main(int argc, char *argv[])
 {
-    test_configure();
-    // test_timeutils();
+    // test_configure();
+    test_timeutils();
     // test_strutils();
     return 0;
 }
@@ -33,9 +33,17 @@ void test_configure()
 
 void test_timeutils()
 {
-    std::string datetime = "2014-03-14T15:13:00.885";
+    std::string datetime = "2023-12-23T12:13:14.885";
     uint64_t    timestamp = datetime_to_timestamp(datetime);
-    std::cout << "timestamp: " << timestamp << std::endl;
+    std::cout << "datetime to timestamp: " << timestamp << std::endl;
+
+    std::string date = "2023-12-23";
+    timestamp = datetime_to_timestamp(date);
+    std::cout << "date to timestamp: " << timestamp << std::endl;
+
+    std::string time = "12:13:14.885";
+    timestamp = datetime_to_timestamp(time);
+    std::cout << "time to timestamp: " << timestamp << std::endl;
 }
 
 void test_strutils()

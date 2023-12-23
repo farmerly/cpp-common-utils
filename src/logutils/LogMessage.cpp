@@ -29,7 +29,6 @@ int LogMessage::setMessage(int level, const char *format, va_list &args)
 #elif defined(_MSC_VER)
     vsprintf_s(log->message, format, args);
 #endif
-
     m_level = level;
     m_length = strlen(m_buffer);
     return m_length;
