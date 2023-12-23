@@ -28,4 +28,11 @@ std::string get_current_format_datetime();
  */
 uint64_t datetime_to_timestamp(std::string datetime);
 
+/**
+ * 时间戳转为字符串时间
+ * @param datetime 毫秒时间戳
+ * @return 日期时间
+ */
+std::string milliseconds_to_datetime(uint64_t ms);
+
 #endif

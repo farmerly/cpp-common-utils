@@ -69,3 +69,17 @@ uint64_t datetime_to_timestamp(std::string datetime)
     time_t timer = mktime(&timeinfo);
     return (uint64_t)timer * 1000 + (uint64_t)milliseconds;
 }
+
+std::string milliseconds_to_datetime(uint64_t ms)
+{
+    std::chrono::system_clock::time_point tp{
+        std::chrono::duration_cast<std::chrono::system_clock::time_point::duration>(std::chrono::milliseconds(ms))};
+    std::stringstream ss;
+    time_t            timer = std::chrono::system_clock::to_time_t(tp);
+    ss << std::put_time(std::localtime(&timer), "%F %T");
+    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
+    auto second = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch());
+    auto milliseconds = (millis - second).count();
+    ss << "." << std::setfill('0') << std::setw(6) << milliseconds;
+    return ss.str();
+}
