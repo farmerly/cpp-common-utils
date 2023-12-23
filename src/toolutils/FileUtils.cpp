@@ -32,6 +32,27 @@ const char *const_basename(const char *filepath)
     return base ? (base + 1) : filepath;
 }
 
+bool file_is_exists(const char *filepath)
+{
+#if defined(__GNUC__)
+    return access(filepath, F_OK) == 0;
+#elif defined(_MSC_VER)
+#endif
+}
+
+bool path_is_exists(const char *directory)
+{
+#if defined(__GNUC__)
+    DIR *dir = opendir(directory);
+    if (dir != nullptr) {
+        closedir(dir);
+        return true;
+    }
+#elif defined(_MSC_VER)
+#endif
+    return false;
+}
+
 void create_directory(const char *directory)
 {
 #if defined(__GNUC__)
@@ -46,6 +67,34 @@ void create_directory(const char *directory)
         CreateDirectoryA(directory, NULL);
     }
 #endif
+}
+
+bool remove_directory(const char *directory)
+{
+#if defined(__GNUC__)
+    if (path_is_exists(directory)) {
+        if (rmdir(directory) != 0) {
+            return false;
+        }
+    }
+#elif defined(_MSC_VER)
+    return false;
+#endif
+    return true;
+}
+
+bool remove_file(const char *filepath)
+{
+#if defined(__GNUC__)
+    if (file_is_exists(filepath)) {
+        if (remove(filepath) != 0) {
+            return false;
+        }
+    }
+#elif defined(_MSC_VER)
+    return false;
+#endif
+    return true;
 }
 
 void create_directory_recurse(const std::string &directory)
@@ -71,7 +120,7 @@ bool remove_directory_recurse(const char *directory)
     dirent *entry;
     while ((entry = readdir(dir)) != nullptr) {
         // 跳过当前目录和父目录
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
             continue;
         }
 

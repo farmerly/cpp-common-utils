@@ -1,3 +1,4 @@
+#include "LogManager.h"
 #include "Logging.h"
 #include "TimeUtils.h"
 #include <chrono>
@@ -10,7 +11,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     std::atomic<uint32_t> value(1);
-    init_log_manager("/root/logs/log");
+    init_log_manager("/root/logs/log", 3);
 
     int         threadnum = 10;
     std::thread threads[threadnum];
@@ -23,7 +24,7 @@ int main(int argc, char *argv[])
 
             for (int i = 0; i < 1000; i++) {
                 auto tmp = value.fetch_add(1);
-                log_debug("%s, hello, world, %d", oss.str().c_str(), tmp);
+                // log_debug("%s, hello, world, %d", oss.str().c_str(), tmp);
                 log_info("%s, hello, world, %d", oss.str().c_str(), tmp);
                 log_warn("%s, hello, world, %d", oss.str().c_str(), tmp);
                 log_error("%s, hello, world, %d", oss.str().c_str(), tmp);

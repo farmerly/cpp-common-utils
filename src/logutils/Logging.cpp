@@ -1,6 +1,6 @@
 #include "Logging.h"
 
-bool init_log_manager(std::string filename, int level, int keepDays)
+bool init_log_manager(std::string filename, int keepDays, int level)
 {
     if (!g_logManager->setLogFilepath(filename)) {
         return false;
