@@ -1,6 +1,7 @@
 add_subdirectory(checksum)
 add_subdirectory(crypto)
 add_subdirectory(logutils)
+add_subdirectory(mapper)
 add_subdirectory(sockutils)
 add_subdirectory(threadpool)
 add_subdirectory(toolutils)

@@ -14,8 +14,8 @@ void test_strutils();
 
 int main(int argc, char *argv[])
 {
-    // test_configure();
-    test_timeutils();
+    test_configure();
+    // test_timeutils();
     // test_strutils();
     return 0;
 }
