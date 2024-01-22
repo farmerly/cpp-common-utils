@@ -14,8 +14,8 @@ public:
     void        addDeclaration();              // 添加声明
 
 public:
-    TinyXmlElement *addRootElement(std::string name); // 添加根节点
-    TinyXmlElement *getRootElement();                 // 获取根节点
+    std::shared_ptr<TinyXmlElement> addRootElement(std::string name); // 添加根节点
+    std::shared_ptr<TinyXmlElement> getRootElement();                 // 获取根节点
 
 private:
     tinyxml2::XMLDocument m_doc;

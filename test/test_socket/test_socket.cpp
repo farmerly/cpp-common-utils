@@ -1,10 +1,10 @@
 #include "test_socket.h"
+#include "Logging.h"
 #include "TcpClient.h"
 #include "TcpConnection.h"
 #include "TcpServer.h"
 #include "UdpServer.h"
 #include <chrono>
-#include <glog/logging.h>
 #include <string>
 #include <thread>
 
@@ -31,7 +31,7 @@ void test_tcp_client_run(const char *ip, uint16_t port)
     while (true) {
         std::string sndmsg = msg + ", " + to_string(index++) + "\n";
         if (client.sendMessage(sndmsg.c_str(), sndmsg.length()) > 0) {
-            LOG(INFO) << "发送成功: " << sndmsg;
+            log_info("发送成功: %s", sndmsg.c_str());
         }
         this_thread::sleep_for(chrono::milliseconds(1));
     }
@@ -42,27 +42,10 @@ void test_tcp_client_run(const char *ip, uint16_t port)
 void test_tcp_server_run(uint16_t port)
 {
     sockutils::TcpServer server;
-    server.setConnectionCallback([](sockutils::TcpConnection *conn) {
-        return true;
-    });
-    server.setMessageCallback([](sockutils::TcpConnection *conn) {
-        int ret = conn->recvMessage();
-        if (ret == 0) {
-            LOG(WARNING) << "缓冲区已满, 无法接收新数据, 关闭连接";
-            conn->disconnect();
-            return;
-        }
+    server.setConnectionCallback([](sockutils::TConnectionInfo *conn) {
+        conn->readCallback = [](sockutils::TcpConnection *conn, void *args) {
 
-        auto dataBuf = conn->getDataBuffer();
-        char buffer[4096] = {0};
-        int  length = dataBuf->memcpy((unsigned char *)buffer, dataBuf->length());
-        if (length == -1) {
-            LOG(WARNING) << "无法拷贝数据, 关闭连接";
-            conn->disconnect();
-            return;
-        }
-        LOG(INFO) << "recv: " << buffer;
-        conn->sendMessage(buffer, dataBuf->length());
+        };
     });
 
     server.start(port);

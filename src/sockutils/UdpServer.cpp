@@ -1,6 +1,6 @@
 #include "UdpServer.h"
+#include "Logging.h"
 #include <arpa/inet.h>
-#include <glog/logging.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -40,9 +40,9 @@ bool UdpServer::bindAddress(uint16_t port)
         if (::bind(m_sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
             goto err;
         }
-        LOG(INFO) << "UdpServer 服务启动成功, 端口号: " << port;
+        log_info("UdpServer 服务启动成功, 端口号: %d", port);
     } else {
-        LOG(INFO) << "UdpServer 套接字绑定成功, sockfd: " << m_sockfd;
+        log_info("UdpServer 套接字绑定成功, sockfd: %d", m_sockfd);
     }
     return true;
 

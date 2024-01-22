@@ -1,7 +1,10 @@
 #include "LogQueue.h"
 #include "LogConstants.h"
 #include "LogMessage.h"
+#include <chrono>
 #include <mutex>
+
+using namespace std::chrono;
 
 namespace logutils {
 
@@ -27,15 +30,20 @@ LogQueue::~LogQueue()
     }
 }
 
-LogMessage *LogQueue::getConsumer()
+LogMessage *LogQueue::getConsumer(uint32_t waitMs)
 {
+    if (m_consumerQueue.size() == 0 && waitMs == 0) {
+        return nullptr;
+    }
+
+    std::unique_lock<std::mutex> lock(m_consumerLock);
+    if (m_consumerQueue.size() == 0 && waitMs != 0) {
+        m_consumerCond.wait_for(lock, milliseconds(waitMs));
+    }
     if (m_consumerQueue.size() > 0) {
-        std::lock_guard<std::mutex> guard(m_consumerLock);
-        if (m_consumerQueue.size() > 0) {
-            LogMessage *log = m_consumerQueue.front();
-            m_consumerQueue.pop_front();
-            return log;
-        }
+        LogMessage *log = m_consumerQueue.front();
+        m_consumerQueue.pop_front();
+        return log;
     }
     return nullptr;
 }
@@ -44,6 +52,7 @@ void LogQueue::putConsumer(LogMessage *logMessage)
 {
     std::lock_guard<std::mutex> guard(m_consumerLock);
     m_consumerQueue.push_back(logMessage);
+    m_consumerCond.notify_one();
 }
 
 LogMessage *LogQueue::getProducer()
@@ -63,6 +72,16 @@ void LogQueue::putProducer(LogMessage *logMessage)
 {
     std::lock_guard<std::mutex> guard(m_producerLock);
     m_producerQueue.push_back(logMessage);
+}
+
+size_t LogQueue::getConsumerSize()
+{
+    return m_consumerQueue.size();
+}
+
+size_t LogQueue::getProducerSize()
+{
+    return m_producerQueue.size();
 }
 
 } // namespace logutils

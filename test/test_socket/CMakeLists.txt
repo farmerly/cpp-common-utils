@@ -5,6 +5,6 @@ project(test_socket)
 aux_source_directory(. DIR_SOURCES)
 add_executable(${PROJECT_NAME} ${DIR_SOURCES})
 
-target_link_libraries(${PROJECT_NAME} glog)
+target_link_libraries(${PROJECT_NAME} logutils)
 target_link_libraries(${PROJECT_NAME} sockutils)
 target_link_libraries(${PROJECT_NAME} toolutils)

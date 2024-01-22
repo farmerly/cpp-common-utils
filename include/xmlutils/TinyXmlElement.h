@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tinyxml2.h"
+#include <memory>
 #include <string>
 
 namespace xmlutils {
@@ -12,22 +13,23 @@ public:
     ~TinyXmlElement();
 
 public:
-    TinyXmlElement *getSubElement();                 // 获取子节点
-    TinyXmlElement *getSubElement(std::string name); // 获取子节点
-    TinyXmlElement *getNextElement();                // 获取当前节点的下一节点
-    bool            toSubElement();                  // 跳转到第一个子节点
-    bool            toNextElement();                 // 跳转到下一节点
+    std::shared_ptr<TinyXmlElement> getSubElement();                 // 获取子节点
+    std::shared_ptr<TinyXmlElement> getSubElement(std::string name); // 获取子节点
+    std::shared_ptr<TinyXmlElement> getNextElement();                // 获取当前节点的下一节点
+    bool                            toSubElement();                  // 跳转到第一个子节点
+    bool                            toNextElement();                 // 跳转到下一节点
 
     // 添加子节点
-    TinyXmlElement *addSubElement(std::string name);
-    TinyXmlElement *addSubElement(std::string name, std::string text);
-    TinyXmlElement *addSubElement(std::string name, bool text);
-    TinyXmlElement *addSubElement(std::string name, float text);
-    TinyXmlElement *addSubElement(std::string name, double text);
-    TinyXmlElement *addSubElement(std::string name, int32_t text);
-    TinyXmlElement *addSubElement(std::string name, uint32_t text);
-    TinyXmlElement *addSubElement(std::string name, int64_t text);
-    TinyXmlElement *addSubElement(std::string name, uint64_t text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, const char *text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, const std::string &text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, bool text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, float text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, double text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, int32_t text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, uint32_t text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, int64_t text);
+    std::shared_ptr<TinyXmlElement> addSubElement(std::string name, uint64_t text);
 
 public:
     std::string getSubElementText(std::string name, std::string defaultValue = "");
@@ -66,7 +68,8 @@ public:
     void setTagName(std::string tag); // 设置标签名称
 
     // 写入标签内容
-    void setText(std::string text); // 设置标签值
+    void setText(const char *text);
+    void setText(const std::string &text);
     void setText(bool value);
     void setText(float value);
     void setText(double value);
@@ -76,7 +79,8 @@ public:
     void setText(uint64_t value);
 
     // 写入属性
-    void setAttribute(std::string attr, std::string value);
+    void setAttribute(std::string attr, const char *value);
+    void setAttribute(std::string attr, const std::string &value);
     void setAttribute(std::string attr, bool value);
     void setAttribute(std::string attr, float value);
     void setAttribute(std::string attr, double value);

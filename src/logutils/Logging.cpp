@@ -6,6 +6,6 @@ bool init_log_manager(std::string filename, int keepDays, int level)
         return false;
     }
     g_logManager->setLogKeepDays(keepDays);
-    g_logManager->setConsoleLevel(level);
+    g_logManager->setLoggingLevel(level);
     return true;
 }

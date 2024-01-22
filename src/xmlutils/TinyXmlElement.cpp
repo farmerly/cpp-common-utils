@@ -1,5 +1,6 @@
 #include "TinyXmlElement.h"
 #include <cstdint>
+#include <memory>
 
 using namespace xmlutils;
 
@@ -20,31 +21,31 @@ TinyXmlElement::~TinyXmlElement()
 {
 }
 
-TinyXmlElement *TinyXmlElement::getSubElement()
+std::shared_ptr<TinyXmlElement> TinyXmlElement::getSubElement()
 {
     tinyxml2::XMLElement *element = m_element->FirstChildElement();
     if (!element) {
         return nullptr;
     }
-    return new TinyXmlElement(element);
+    return std::make_shared<TinyXmlElement>(element);
 }
 
-TinyXmlElement *TinyXmlElement::getSubElement(std::string name)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::getSubElement(std::string name)
 {
     tinyxml2::XMLElement *element = m_element->FirstChildElement(name.c_str());
     if (!element) {
         return nullptr;
     }
-    return new TinyXmlElement(element);
+    return std::make_shared<TinyXmlElement>(element);
 }
 
-TinyXmlElement *TinyXmlElement::getNextElement()
+std::shared_ptr<TinyXmlElement> TinyXmlElement::getNextElement()
 {
     tinyxml2::XMLElement *element = nullptr;
     if (!(element = m_element->NextSiblingElement())) {
         return nullptr;
     }
-    return new TinyXmlElement(element);
+    return std::make_shared<TinyXmlElement>(element);
 }
 
 bool TinyXmlElement::toSubElement()
@@ -67,83 +68,92 @@ bool TinyXmlElement::toNextElement()
     return true;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name)
 {
     tinyxml2::XMLElement *element = nullptr;
     if (!(element = m_element->InsertNewChildElement(name.c_str()))) {
         return nullptr;
     }
-    return new TinyXmlElement(element);
+    return std::make_shared<TinyXmlElement>(element);
 }
 
 /*********************************** addSubElementText ************************************/
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, std::string text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, const char *text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, bool text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, const std::string &text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, float text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, bool text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, double text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, float text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, int32_t text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, double text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, uint32_t text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, int32_t text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, int64_t text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, uint32_t text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
     return element;
 }
 
-TinyXmlElement *TinyXmlElement::addSubElement(std::string name, uint64_t text)
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, int64_t text)
 {
-    TinyXmlElement *element = addSubElement(name);
+    auto element = addSubElement(name);
+    if (element != nullptr) {
+        element->setText(text);
+    }
+    return element;
+}
+
+std::shared_ptr<TinyXmlElement> TinyXmlElement::addSubElement(std::string name, uint64_t text)
+{
+    auto element = addSubElement(name);
     if (element != nullptr) {
         element->setText(text);
     }
@@ -320,7 +330,12 @@ void TinyXmlElement::setTagName(std::string tag)
 
 /*********************************** setText ************************************/
 
-void TinyXmlElement::setText(std::string text)
+void TinyXmlElement::setText(const char *text)
+{
+    m_element->SetText(text);
+}
+
+void TinyXmlElement::setText(const std::string &text)
 {
     m_element->SetText(text.c_str());
 }
@@ -361,8 +376,12 @@ void TinyXmlElement::setText(uint64_t value)
 }
 
 /*********************************** setAttribute ************************************/
+void TinyXmlElement::setAttribute(std::string attr, const char *value)
+{
+    m_element->SetAttribute(attr.c_str(), value);
+}
 
-void TinyXmlElement::setAttribute(std::string attr, std::string value)
+void TinyXmlElement::setAttribute(std::string attr, const std::string &value)
 {
     m_element->SetAttribute(attr.c_str(), value.c_str());
 }

@@ -1,4 +1,5 @@
 #include "TcpServer.h"
+#include "Logging.h"
 #include "TcpConnection.h"
 #include <arpa/inet.h>
 #include <cstddef>
@@ -8,8 +9,8 @@
 #include <event2/event.h>
 #include <event2/listener.h>
 #include <event2/thread.h>
-#include <glog/logging.h>
 #include <iomanip>
+#include <memory>
 #include <mutex>
 #include <sys/socket.h>
 #include <thread>
@@ -20,11 +21,10 @@ static constexpr int max_connection = 32;
 
 TcpServer::TcpServer()
 {
-    m_connections = new TTcpConnInfo[max_connection];
+    m_connections = new TConnectionInfo[max_connection];
     for (int i = 0; i < max_connection; i++) {
         m_connections[i].index = i;
         m_connections[i].connection = nullptr;
-        m_connections[i].server = nullptr;
     }
     m_base = nullptr;
     m_running = false;
@@ -48,21 +48,20 @@ void TcpServer::listenCallback(struct evconnlistener *listener, evutil_socket_t 
     // 释放 bufferevent 时关闭底层传输端口
     bev = bufferevent_socket_new(pthis->m_base, sock, BEV_OPT_CLOSE_ON_FREE);
     if (!bev) {
-        LOG(ERROR) << "Error constructing bufferevent!";
+        log_error("Error constructing bufferevent!");
         event_base_loopbreak(pthis->m_base);
         return;
     }
 
     // 调用注册的回调方法
-    TcpConnection *conn = new TcpConnection(bev, addr);
+    auto connInfo = std::make_shared<TConnectionInfo>();
+    connInfo->connection = new TcpConnection(bev, addr);
     if (pthis->m_connectionCB) {
-        if (!pthis->m_connectionCB(conn)) {
-            delete conn;
-            return;
-        }
-
-        if (!conn->isConnected()) {
-            delete conn;
+        pthis->m_connectionCB(connInfo.get());
+        if (!connInfo->connection->isConnected()) {
+            log_debug("断开连接: [%s]", connInfo->connection->getPeerAddress().toIpPort().c_str());
+            delete connInfo->connection;
+            connInfo->connection = nullptr;
             return;
         }
     }
@@ -72,43 +71,50 @@ void TcpServer::listenCallback(struct evconnlistener *listener, evutil_socket_t 
     for (int i = 0; i < max_connection; i++) {
         if (!pthis->m_connections[i].connection) {
             pthis->m_connections[i].server = pthis;
-            pthis->m_connections[i].connection = conn;
-            LOG(INFO) << "客户端 [" << conn->getPeerAddress()->toIpPort() << "] 连接成功.";
+            pthis->m_connections[i].connection = connInfo->connection;
+            pthis->m_connections[i].readCallback = connInfo->readCallback;
+            pthis->m_connections[i].callbackArgs = connInfo->callbackArgs;
+            log_info("客户端 [%s] 连接成功.", connInfo->connection->getPeerAddress().toIpPort().c_str());
             bufferevent_setcb(bev, readCallback, NULL, eventCallback, &pthis->m_connections[i]);
             bufferevent_enable(bev, EV_READ);
             return;
         }
     }
 
-    LOG(WARNING) << "超过最大连接数限制, 关闭客户端 [" << conn->getPeerAddress()->toIpPort() << "] 连接.";
-    delete conn;
+    log_warn("超过最大连接数限制, 关闭客户端 [%s] 连接", connInfo->connection->getPeerAddress().toIpPort().c_str());
+    delete connInfo->connection;
 }
 
 void TcpServer::readCallback(struct bufferevent *bev, void *args)
 {
-    TTcpConnInfo *connEvent = (TTcpConnInfo *)args;
-    if (connEvent->server->m_messageCB) {
-        connEvent->server->m_messageCB(connEvent->connection);
+    TConnectionInfo *connEvent = (TConnectionInfo *)args;
+    if (connEvent->readCallback) {
+        connEvent->readCallback(connEvent->connection, connEvent->callbackArgs);
     } else {
-        int ret = connEvent->connection->recvMessage();
+        char buffer[4096];
+        int  ret = connEvent->connection->recvMessage(buffer, 4096);
         if (ret == 0) {
             connEvent->connection->disconnect();
+            delete connEvent->connection;
+            connEvent->connection = nullptr;
         }
-        // 丢弃数据
-        connEvent->connection->getDataBuffer()->clear();
     }
 }
 
 void TcpServer::eventCallback(struct bufferevent *bev, short events, void *args)
 {
-    TTcpConnInfo *connEvent = static_cast<TTcpConnInfo *>(args);
+    TConnectionInfo *connEvent = static_cast<TConnectionInfo *>(args);
     if (events & BEV_EVENT_EOF) {
-        LOG(WARNING) << "客户端 [" << connEvent->connection->getPeerAddress()->toIpPort() << "] 连接断开.";
+        log_warn("客户端 [%s] 连接断开.", connEvent->connection->getPeerAddress().toIpPort().c_str());
     } else if (events & BEV_EVENT_ERROR) {
-        LOG(WARNING) << "客户端 [" << connEvent->connection->getPeerAddress()->toIpPort()
-                     << "] 连接异常: " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR());
+        log_warn("客户端 [%s] 连接异常: %s",
+                 connEvent->connection->getPeerAddress().toIpPort().c_str(),
+                 evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
     }
     if (connEvent->connection) {
+        if (connEvent->server->m_disConnectCB) {
+            connEvent->server->m_disConnectCB(connEvent);
+        }
         delete connEvent->connection;
         connEvent->connection = nullptr;
     }
@@ -129,25 +135,28 @@ void TcpServer::eventDispatch(uint16_t port)
                                                          (struct sockaddr *)&sock_addr,
                                                          sizeof(sock_addr));
     if (!listener) {
-        LOG(ERROR) << "端口监听失败，程序退出: " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR());
+        log_error("端口监听失败，程序退出: %s", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
         exit(EXIT_FAILURE);
     }
 
-    LOG(INFO) << "server listen on port: " << port;
+    log_info("server listen on port: %d", port);
     while (m_running) {
         int ret = event_base_dispatch(m_base);
         if (ret == -1) {
-            LOG(ERROR) << "event_base_dispatch 异常，程序退出: " << evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR());
+            log_error("event_base_dispatch 异常，程序退出: %s", evutil_socket_error_to_string(EVUTIL_SOCKET_ERROR()));
             break;
         }
     }
 
     // 关闭监听
-    LOG(WARNING) << "服务端关闭监听, eventDispatch 线程退出";
+    log_warn("服务端关闭监听, eventDispatch 线程退出.");
     evconnlistener_free(listener);
     // 主动断开已建立连接的客户端
     for (int i = 0; i < max_connection; i++) {
         if (m_connections[i].connection) {
+            if (m_disConnectCB) {
+                m_disConnectCB(&m_connections[i]);
+            }
             delete m_connections[i].connection;
             m_connections[i].connection = nullptr;
         }
@@ -159,6 +168,9 @@ bool TcpServer::start(uint16_t port)
     m_running = true;
     evthread_use_pthreads();
     m_base = event_base_new();
+    if (!m_base) {
+        return false;
+    }
     m_thread = std::thread(&TcpServer::eventDispatch, this, port);
     return true;
 }
@@ -173,12 +185,22 @@ void TcpServer::stop()
     event_base_free(m_base);
 }
 
-void TcpServer::setConnectionCallback(EventConnectionCB callback)
+void TcpServer::setConnectionCallback(EventConnectCB callback)
 {
     m_connectionCB = callback;
 }
 
-void TcpServer::setMessageCallback(EventMessageCB callback)
+void TcpServer::setDisconnectCallback(EventDisConnectCB callback)
 {
-    m_messageCB = callback;
+    m_disConnectCB = callback;
+}
+
+void TcpServer::broadcastMessage(const char *buf, uint32_t len)
+{
+    std::lock_guard<std::mutex> guard(m_connLock);
+    for (int i = 0; i < max_connection; i++) {
+        if (m_connections[i].connection) {
+            m_connections[i].connection->sendMessage(buf, len);
+        }
+    }
 }

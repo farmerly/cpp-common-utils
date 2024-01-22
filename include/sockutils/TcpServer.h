@@ -11,16 +11,20 @@
 
 namespace sockutils {
 
+struct TConnectionInfo;
 class TcpServer;
 
-struct TTcpConnInfo {
-    int            index;
-    TcpConnection *connection;
-    TcpServer     *server;
-};
+typedef std::function<void(TConnectionInfo *)>       EventConnectCB;
+typedef std::function<void(TConnectionInfo *)>       EventDisConnectCB;
+typedef std::function<void(TcpConnection *, void *)> EventMessageCB;
 
-typedef std::function<bool(TcpConnection *)> EventConnectionCB;
-typedef std::function<void(TcpConnection *)> EventMessageCB;
+struct TConnectionInfo {
+    int            index;
+    TcpServer     *server;
+    TcpConnection *connection;
+    EventMessageCB readCallback; // 消息回调
+    void          *callbackArgs; // 回调参数
+};
 
 /*****
  * 异步单线程，非线程安全，谨慎修改及使用
@@ -45,21 +49,17 @@ public:
      * 设置连接回调
      * @param callback 连接回调
      */
-    void setConnectionCallback(EventConnectionCB callback);
-
-    /**
-     * 设置消息处理回调
-     * @param callback 消息处理回调
-     */
-    void setMessageCallback(EventMessageCB callback);
+    void setConnectionCallback(EventConnectCB callback);
+    void setDisconnectCallback(EventDisConnectCB callback);
+    void broadcastMessage(const char *buf, uint32_t len);
 
 private:
     bool               m_running; // 服务运行标识
     std::thread        m_thread;  // 线程句柄
     struct event_base *m_base;
-    EventConnectionCB  m_connectionCB;
-    EventMessageCB     m_messageCB;
-    TTcpConnInfo      *m_connections;
+    EventConnectCB     m_connectionCB;
+    EventDisConnectCB  m_disConnectCB;
+    TConnectionInfo   *m_connections;
     std::mutex         m_connLock;
 };
 } // namespace sockutils

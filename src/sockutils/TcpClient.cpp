@@ -1,8 +1,9 @@
 #include "TcpClient.h"
+#include "Logging.h"
 #include <arpa/inet.h>
+#include <cerrno>
 #include <chrono>
 #include <cstring>
-#include <glog/logging.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <thread>
@@ -19,8 +20,10 @@ using namespace chrono;
 TcpClient::TcpClient()
 {
     m_isConnected = false;
+    m_isHandShark = false;
     m_sockfd = INVALID_SOCKET;
     m_running = false;
+    m_handShark = nullptr;
     FD_ZERO(&m_connfds);
 }
 
@@ -42,20 +45,20 @@ bool TcpClient::connect(const char *ip, uint16_t port)
 
     m_sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (m_sockfd < 0) {
-        LOG(ERROR) << "socket 创建失败! error: " << strerror(errno);
+        log_error("socket 创建失败! error: %s", strerror(errno));
         return false;
     }
 
     struct timeval timeout = {3, 0};
     if (setsockopt(m_sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
-        LOG(ERROR) << "socket 设置非阻塞读失败! error: " << strerror(errno);
+        log_error("socket 设置非阻塞读失败! error: %s", strerror(errno));
         goto err;
     }
 
     if (::connect(m_sockfd, (struct sockaddr *)&clnt_addr, sizeof(clnt_addr)) < 0) {
         goto err;
     }
-    LOG(INFO) << "连接到 " << ip << ":" << port << " 服务器成功...";
+    log_info("连接到 %s:%d 服务器成功", ip, port);
     FD_SET(m_sockfd, &m_connfds);
     m_isConnected = true;
     return true;
@@ -73,6 +76,7 @@ void TcpClient::closesocket()
         m_sockfd = INVALID_SOCKET;
     }
     m_isConnected = false;
+    m_isHandShark = false;
 }
 
 uint64_t TcpClient::curTimestamp()
@@ -89,10 +93,22 @@ void TcpClient::loopThread(std::string ip, uint16_t port)
             uint64_t eTime = curTimestamp();
             if (eTime >= (bTime + 1000 * 60)) {
                 // 每隔1分钟记录一次日志
-                LOG(INFO) << "连接服务器失败, " << ip << ":" << port;
+                log_info("连接服务器失败, %s:%d ", ip.c_str(), port);
                 bTime = eTime;
             }
             this_thread::sleep_for(milliseconds(1000));
+        }
+
+        if (m_handShark) {
+            // 握手协议
+            if (!m_handShark(m_sockfd)) {
+                log_error("与服务器握手失败, 断开连接, %s:%d", ip.c_str(), port);
+                closesocket();
+                continue;
+            } else {
+                log_info("与服务器握手成功, %s:%d", ip.c_str(), port);
+                m_isHandShark = true;
+            }
         }
 
         while (m_running && m_isConnected) {
@@ -105,12 +121,12 @@ void TcpClient::loopThread(std::string ip, uint16_t port)
                     char buffer[1024] = {0};
                     int  rcvlen = ::recv(m_sockfd, buffer, 1024, 0);
                     if (rcvlen == 0) {
-                        LOG(WARNING) << "服务器主动断开连接, " << ip << ":" << port;
+                        log_warn("服务器主动断开连接, %s:%d", ip.c_str(), port);
                         closesocket();
                         break;
                     } else if (rcvlen < 0) {
                         if (errno != EINTR && errno != EAGAIN) {
-                            LOG(ERROR) << "与服务器连接异常, 断开连接, " << ip << ":" << port << ", reason: " << strerror(errno);
+                            log_error("与服务器连接异常, 断开连接, %s:%d, reason: %s", ip.c_str(), port, strerror(errno));
                             closesocket();
                             break;
                         }
@@ -119,13 +135,13 @@ void TcpClient::loopThread(std::string ip, uint16_t port)
                     }
                 } else {
                     if (!m_callback(m_sockfd)) {
-                        LOG(WARNING) << "与服务器断开连接, " << ip << ":" << port;
+                        log_warn("与服务器断开连接, %s:%d", ip.c_str(), port);
                         closesocket();
                         break;
                     }
                 }
             } else if (ret < 0) {
-                LOG(WARNING) << "客户端连接异常, 断开连接: " << ip << ":" << port;
+                log_warn("客户端连接异常, 断开连接, %s:%d", ip.c_str(), port);
                 closesocket();
                 break;
             }
@@ -136,7 +152,7 @@ void TcpClient::loopThread(std::string ip, uint16_t port)
 bool TcpClient::start(std::string ip, uint16_t port)
 {
     if (!m_callback) {
-        LOG(WARNING) << "未设置回调函数, 可使用 setRecvCallback 方法设置 recv 回调";
+        log_warn("未设置回调函数, 可使用 setRecvCallback 方法设置 recv 回调");
     }
 
     m_running = true;
@@ -157,6 +173,11 @@ void TcpClient::setRecvCallback(TcpClientRecvCB callback)
     m_callback = callback;
 }
 
+void TcpClient::setHandSharkCallback(TcpClientHandShark handShark)
+{
+    m_handShark = handShark;
+}
+
 int TcpClient::sendMessage(const char *buf, int len)
 {
     if (!m_isConnected) {
@@ -167,7 +188,7 @@ int TcpClient::sendMessage(const char *buf, int len)
     do {
         int ret = ::send(m_sockfd, buf + nbytes, len - nbytes, MSG_NOSIGNAL);
         if (ret <= 0) {
-            LOG(INFO) << "发送失败: " << m_sockfd << ", " << errno;
+            log_warn("发送失败: %d, %d", m_sockfd, errno);
             if (errno == EINTR) {
                 continue;
             }
@@ -176,4 +197,9 @@ int TcpClient::sendMessage(const char *buf, int len)
         nbytes += ret;
     } while (nbytes != len);
     return nbytes;
+}
+
+bool TcpClient::isConnected()
+{
+    return (m_handShark ? m_isHandShark : true) && m_isConnected;
 }

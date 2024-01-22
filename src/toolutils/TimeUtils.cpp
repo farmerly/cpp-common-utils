@@ -5,28 +5,34 @@
 #include <iomanip>
 #include <sstream>
 
+using namespace std::chrono;
+
 uint64_t get_current_timestamp_seconds()
 {
-    auto tp = std::chrono::high_resolution_clock::now().time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::seconds>(tp).count();
+    auto tp = high_resolution_clock::now().time_since_epoch();
+    return duration_cast<seconds>(tp).count();
 }
 
 uint64_t get_current_timestamp_millis()
 {
-    auto tp = std::chrono::high_resolution_clock::now().time_since_epoch();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(tp).count();
+    auto tp = high_resolution_clock::now().time_since_epoch();
+    return duration_cast<milliseconds>(tp).count();
 }
 
 std::string get_current_format_datetime()
 {
+    auto   tp = high_resolution_clock::now();
+    time_t timer = system_clock::to_time_t(tp);
+
     std::stringstream ss;
-    auto              tp = std::chrono::high_resolution_clock::now();
-    time_t            timer = std::chrono::system_clock::to_time_t(tp);
-    ss << std::put_time(std::localtime(&timer), "%F %T");
-    auto millis = std::chrono::duration_cast<std::chrono::microseconds>(tp.time_since_epoch());
-    auto second = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch());
-    auto ms = (millis - second).count();
-    ss << "." << std::setfill('0') << std::setw(6) << ms;
+    char              datetime[32] = {0};
+    std::strftime(datetime, 32, "%Y-%m-%d %H:%M:%S", std::localtime(&timer));
+    ss << datetime;
+
+    auto micros = duration_cast<microseconds>(tp.time_since_epoch());
+    auto second = duration_cast<seconds>(tp.time_since_epoch());
+    auto microsec = (micros - second).count();
+    ss << "." << std::setfill('0') << std::setw(6) << microsec;
     return ss.str();
 }
 
@@ -70,16 +76,27 @@ uint64_t datetime_to_timestamp(std::string datetime)
     return (uint64_t)timer * 1000 + (uint64_t)milliseconds;
 }
 
-std::string milliseconds_to_datetime(uint64_t ms)
+std::string timestamp_to_datetime(time_t timer)
 {
-    std::chrono::system_clock::time_point tp{
-        std::chrono::duration_cast<std::chrono::system_clock::time_point::duration>(std::chrono::milliseconds(ms))};
+    char datetime[32] = {0};
+    std::strftime(datetime, 32, "%Y-%m-%d %H:%M:%S", std::localtime(&timer));
+    return std::string(datetime);
+}
+
+std::string milliseconds_to_datetime(uint64_t timestamp, bool hasMillis)
+{
+    system_clock::time_point tp{duration_cast<system_clock::time_point::duration>(milliseconds(timestamp))};
+    time_t                   timer = system_clock::to_time_t(tp);
+
     std::stringstream ss;
-    time_t            timer = std::chrono::system_clock::to_time_t(tp);
-    ss << std::put_time(std::localtime(&timer), "%F %T");
-    auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
-    auto second = std::chrono::duration_cast<std::chrono::seconds>(tp.time_since_epoch());
-    auto milliseconds = (millis - second).count();
-    ss << "." << std::setfill('0') << std::setw(6) << milliseconds;
+    char              datetime[32] = {0};
+    std::strftime(datetime, 32, "%Y-%m-%d %H:%M:%S", std::localtime(&timer));
+    ss << datetime;
+    if (hasMillis) {
+        auto millis = duration_cast<milliseconds>(tp.time_since_epoch());
+        auto second = duration_cast<seconds>(tp.time_since_epoch());
+        auto millisec = (millis - second).count();
+        ss << "." << std::setfill('0') << std::setw(3) << millisec;
+    }
     return ss.str();
 }

@@ -2,6 +2,7 @@
 
 #include "LogConstants.h"
 #include <cstdarg>
+#include <cstdint>
 
 namespace logutils {
 class LogMessage

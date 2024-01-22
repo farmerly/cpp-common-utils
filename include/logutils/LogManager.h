@@ -26,7 +26,7 @@ public:
 public:
     bool setLogFilepath(std::string filename);
     void setLogKeepDays(int keepDays);
-    void setConsoleLevel(int level);
+    void setLoggingLevel(int level);
     void logRecord(int level, const char *format, ...);
 
 private:
@@ -40,12 +40,12 @@ private:
     std::map<int, std::fstream> m_logStream;
 
 private:
-    bool        m_bWriteLog; // 是否写入日志
+    bool        m_bWriteLog; // 是否写入日志文件
     bool        m_bRunning;  // 运行状态
-    int         m_logLevel;
-    int         m_keepDays; // 日志保留天数
+    int         m_logLevel;  // 记录的日志级别
+    int         m_keepDays;  // 日志保留天数
+    uint64_t    m_lastTime;  // 上次日志创建时间
     LogQueue   *m_logQueue;
     std::thread m_thHandle;
-    uint64_t    m_lastTime; // 上次日志创建时间
 };
 } // namespace logutils

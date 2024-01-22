@@ -63,7 +63,7 @@ void LogManager::setLogKeepDays(int keepDays)
     m_keepDays = keepDays;
 }
 
-void LogManager::setConsoleLevel(int level)
+void LogManager::setLoggingLevel(int level)
 {
     // 设置日志打印级别
     m_logLevel = level;
@@ -100,9 +100,11 @@ void LogManager::openLogFile(int level)
             oss << "Warn.log.";
             break;
         case LOG_LEVEL_INFO:
+            oss << "Info.log.";
+            break;
         case LOG_LEVEL_DEBUG:
         default:
-            oss << "Info.log.";
+            oss << "Debug.log.";
     }
     oss << std::put_time(std::localtime(&timer), "%Y%m%d");
 
@@ -159,9 +161,8 @@ void LogManager::loggerWorkerThread()
             }
         }
 
-        LogMessage *log = m_logQueue->getConsumer();
+        LogMessage *log = m_logQueue->getConsumer(1000);
         if (log == nullptr) {
-            this_thread::sleep_for(chrono::milliseconds(1));
             continue;
         }
 

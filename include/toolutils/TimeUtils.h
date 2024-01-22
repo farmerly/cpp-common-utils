@@ -28,8 +28,16 @@ std::string get_current_format_datetime();
 uint64_t datetime_to_timestamp(std::string datetime);
 
 /**
- * 时间戳转为字符串时间
- * @param datetime 毫秒时间戳
+ * time_t 转 时间字符串
+ * @param timer time_t 时间戳
  * @return 日期时间
  */
-std::string milliseconds_to_datetime(uint64_t ms);
+std::string timestamp_to_datetime(time_t timer);
+
+/**
+ * 时间戳转为字符串时间
+ * @param datetime 毫秒时间戳
+ * @param hasMillis 是否包含毫秒时间
+ * @return 日期时间
+ */
+std::string milliseconds_to_datetime(uint64_t timestamp, bool hasMillis = true);

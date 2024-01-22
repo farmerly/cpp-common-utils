@@ -13,8 +13,9 @@ LogMessage::LogMessage()
 
 LogMessage::~LogMessage()
 {
-    if (m_buffer)
+    if (m_buffer) {
         delete[] m_buffer;
+    }
 }
 
 char *LogMessage::getMessage()

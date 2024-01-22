@@ -1,5 +1,6 @@
 #include "TinyXmlDocument.h"
 #include "TinyXmlElement.h"
+#include <memory>
 
 using namespace xmlutils;
 
@@ -31,20 +32,20 @@ void TinyXmlDocument::addDeclaration()
     m_doc.InsertFirstChild(declaration);
 }
 
-TinyXmlElement *TinyXmlDocument::addRootElement(std::string name)
+std::shared_ptr<TinyXmlElement> TinyXmlDocument::addRootElement(std::string name)
 {
     tinyxml2::XMLElement *root = m_doc.NewElement(name.c_str());
     if (!m_doc.InsertEndChild(root)) {
         return nullptr;
     }
-    return new TinyXmlElement(root);
+    return std::make_shared<TinyXmlElement>(root);
 }
 
-TinyXmlElement *TinyXmlDocument::getRootElement()
+std::shared_ptr<TinyXmlElement> TinyXmlDocument::getRootElement()
 {
     tinyxml2::XMLElement *element = nullptr;
     if (!(element = m_doc.RootElement())) {
         return nullptr;
     }
-    return new TinyXmlElement(element);
+    return std::make_shared<TinyXmlElement>(element);
 }

@@ -3,60 +3,9 @@
 #include <cstring>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
-#include <glog/logging.h>
 #include <string>
 
 using namespace sockutils;
-
-DataBuffer::DataBuffer(int maxSize)
-{
-    m_buffer = new unsigned char[maxSize];
-    m_maxSize = maxSize;
-    m_length = 0;
-}
-
-DataBuffer::~DataBuffer()
-{
-    if (m_buffer != nullptr)
-        delete[] m_buffer;
-}
-
-unsigned char *DataBuffer::buffer()
-{
-    return m_buffer;
-}
-
-unsigned int DataBuffer::length()
-{
-    return m_length;
-}
-
-void DataBuffer::length(unsigned int len)
-{
-    m_length = len;
-}
-
-unsigned int DataBuffer::remain()
-{
-    return m_maxSize - m_length;
-}
-
-int DataBuffer::memcpy(unsigned char *dst, unsigned int len)
-{
-    if (len > m_length) {
-        return -1;
-    }
-
-    ::memcpy(dst, m_buffer, len);
-    ::memcpy(m_buffer, m_buffer + len, m_length - len);
-    m_length -= len;
-    return len;
-}
-
-void DataBuffer::clear()
-{
-    m_length = 0;
-}
 
 PeerAddress::PeerAddress(sockaddr *sa)
 {
@@ -85,24 +34,16 @@ std::string PeerAddress::toIpPort() const
     return m_ip + ":" + std::to_string(m_port);
 }
 
-TcpConnection::TcpConnection(bufferevent *bev, sockaddr *sa, uint32_t maxSize)
+TcpConnection::TcpConnection(bufferevent *bev, sockaddr *sa) : m_peerAddress(sa)
 {
     m_bev = bev;
     m_isConnected = true;
-    m_peerAddress = new PeerAddress(sa);
-    m_dataBuffer = new DataBuffer(maxSize);
 }
 
 TcpConnection::~TcpConnection()
 {
     if (isConnected()) {
         disconnect();
-    }
-    if (m_peerAddress) {
-        delete m_peerAddress;
-    }
-    if (m_dataBuffer) {
-        delete m_dataBuffer;
     }
 }
 
@@ -120,25 +61,14 @@ void TcpConnection::disconnect()
     }
 }
 
-PeerAddress *TcpConnection::getPeerAddress() const
+const PeerAddress &TcpConnection::getPeerAddress() const
 {
     return m_peerAddress;
 }
 
-DataBuffer *TcpConnection::getDataBuffer() const
+int TcpConnection::recvMessage(char *buf, int len)
 {
-    return m_dataBuffer;
-}
-
-int TcpConnection::recvMessage()
-{
-    unsigned char *buffer = m_dataBuffer->buffer();
-    uint32_t       remain = m_dataBuffer->remain();
-    uint32_t       length = m_dataBuffer->length();
-
-    int n = ::bufferevent_read(m_bev, buffer + length, remain);
-    m_dataBuffer->length(length + n);
-    return n;
+    return ::bufferevent_read(m_bev, buf, len);
 }
 
 int TcpConnection::sendMessage(const char *buf, int len)
