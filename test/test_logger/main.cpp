@@ -11,7 +11,7 @@ using namespace std;
 int main(int argc, char *argv[])
 {
     std::atomic<uint32_t> value(1);
-    init_log_manager("/root/logs/log", 3);
+    init_log_manager("./logs/log", 3);
 
     int         threadnum = 10;
     std::thread threads[threadnum];

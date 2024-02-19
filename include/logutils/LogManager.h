@@ -1,12 +1,12 @@
 #pragma once
 
+#include "LogInstance.h"
 #include "LogQueue.h"
 #include <atomic>
 #include <cstdarg>
 #include <fstream>
 #include <iostream>
 #include <map>
-#include <mutex>
 #include <string>
 #include <thread>
 
@@ -17,7 +17,7 @@ static constexpr int LOG_LEVEL_INFO = 1;
 static constexpr int LOG_LEVEL_WARN = 2;
 static constexpr int LOG_LEVEL_ERROR = 3;
 
-class LogManager
+class LogManager : public LogInstance<LogManager>
 {
 public:
     LogManager();
@@ -47,5 +47,8 @@ private:
     uint64_t    m_lastTime;  // 上次日志创建时间
     LogQueue   *m_logQueue;
     std::thread m_thHandle;
+
+public:
+    friend LogInstance<LogManager>;
 };
 } // namespace logutils

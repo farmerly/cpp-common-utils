@@ -1,5 +1,9 @@
 cmake_minimum_required (VERSION 3.0)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Chosse the type of build, Debug or Release" FORCE)
+endif()
+
 project(cpp_common_utils)
 
 add_compile_options(-g)
