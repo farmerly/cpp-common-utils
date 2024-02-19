@@ -178,6 +178,7 @@ bool HttpServer::setGetCallback(std::string route, HttpGetHandler handler)
         return false;
     }
     m_mapGetController.insert(std::pair<std::string, HttpGetHandler>(route, handler));
+    return true;
 }
 
 bool HttpServer::setPostCallback(std::string route, HttpPostHandler handler)
@@ -186,4 +187,5 @@ bool HttpServer::setPostCallback(std::string route, HttpPostHandler handler)
         return false;
     }
     m_mapPostController.insert(std::pair<std::string, HttpPostHandler>(route, handler));
+    return true;
 }
