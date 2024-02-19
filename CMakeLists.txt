@@ -6,8 +6,6 @@ endif()
 
 project(cpp_common_utils)
 
-add_compile_options(-g)
-
 include(CheckCXXCompilerFlag)
 if(CMAKE_COMPILER_IS_GNUCXX)
 	check_cxx_compiler_flag(--std=c++11 SUPPORTS_CXX11)
